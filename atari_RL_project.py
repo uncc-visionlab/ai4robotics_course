@@ -1,7 +1,7 @@
 # Install the required libraries:
 
 # pip install threading numpy pygame
-# pip install gymnasium stable-baselines3[extra] torch torchvision tensorboard sb3-contrib
+# pip install gymnasium[accept-rom-license] stable-baselines3[extra] torch torchvision tensorboard sb3-contrib
 # pip install ale_py opencv-python
 # pip install optuna optuna-integration[pytorch_lightning]
 
