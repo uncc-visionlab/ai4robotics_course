@@ -560,6 +560,7 @@ def agent_play(env, model, frame_skip=1, width=500, height=400, frame_rate=10):
             clock.tick(100)  # Limit the loop to 100 queries per second
 
     running = True
+    num_frames = 0
     while running:  # Loop to allow replaying
         obs = env.reset()
         done = False
