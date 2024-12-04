@@ -18,7 +18,7 @@
 import gymnasium as gym
 from stable_baselines3.common.atari_wrappers import AtariWrapper, EpisodicLifeEnv
 from sb3_contrib import RecurrentPPO, TRPO, QRDQN
-from stable_baselines3 import A2C, DQN, PPO, SAC
+from stable_baselines3 import A2C, DQN, PPO
 from stable_baselines3.common.monitor import Monitor
 from stable_baselines3.common.evaluation import evaluate_policy
 from stable_baselines3.common.vec_env import DummyVecEnv, VecFrameStack, SubprocVecEnv
@@ -52,7 +52,6 @@ def select_model_train():
                                   "5. TRPO\n"
                                   "6. QRDQN\n"
                                   "7. RecurrentPPO\n"
-                                  "8. SAC\n"
                                   "Enter your choice (Default 4): ")
     if not algorithm_type_choice:
         algorithm_type_choice = "4"
