@@ -9,12 +9,19 @@
 # tensorboard --logdir ./logs --port 6006
 
 # Run this command in the python terminal to start TensorBoard during RL parameter optimization:
-# tensorboard --logdir ./neptuna --port 6007
+# tensorboard --logdir ./neptuna_logs --port 6007
 
 # Adjustments:
 # Modify render_freq to control how often gameplay is rendered.
 # Increase time_steps for more extensive training.
 
+# To run jupyter notebooks in Pycharm:
+#
+#  1. Install juypter (pip install jupyter or use the interface to install this python package)
+#  2. In the console/terminal type "jupyter-notebook"
+#  3. Access your .pynb file and folders using your computers web browser which will now be running the jupyter
+#  4. Typical address for the web browser is http://localhost:8888/notebooks
+#
 import gymnasium as gym
 import ale_py
 from stable_baselines3.common.atari_wrappers import AtariWrapper, EpisodicLifeEnv
@@ -56,15 +63,11 @@ def select_model_train():
                                   "Enter your choice (Default 4): ")
     if not algorithm_type_choice:
         algorithm_type_choice = "4"
-    algorithm_type_array = ["REINFORCE", "A2C", "DQN", "PPO", "TRPO", "QRDQN", "RPPO", "SAC"]
-    # log_dir_algorithm_array = ["reinforce", "a2c", "dqn", "ppo", "trpo", "qrdqn", "rppo"]
-
+    algorithm_type_array = ["REINFORCE", "A2C", "DQN", "PPO", "TRPO", "QRDQN", "RPPO"]
     algorithm_choice = algorithm_type_array[int(algorithm_type_choice) - 1]
-    # log_dir_algorithm = log_dir_algorithm_array[int(algorithm_type_choice) - 1]
     if algorithm_choice == 1:
         print("REINFORCE not implemented. Choosing PPO.")
         algorithm_choice = "PPO"
-        # log_dir_algorithm = "ppo"
     return algorithm_choice
 
 
@@ -245,11 +248,11 @@ def make_monitored_env(rank, log_dir=None, frame_skip=4, screen_size=84):
         env = gym.make(**environment_config)
         # Each environment has its own log file
         # Preprocess Atari environment (resize, grayscale, etc.)
+        if log_dir is not None:
+            env = Monitor(env, os.path.join(log_dir, f"env_{rank}.log"))
         env = AtariWrapper(env, frame_skip=frame_skip, screen_size=screen_size)
         # Wrap with EpisodicLifeEnv to treat one life as an episode
         env = EpisodicLifeEnv(env)
-        if log_dir is not None:
-            env = Monitor(env, os.path.join(log_dir, f"env_{rank}.log"))
         return env
 
     return _init
@@ -326,6 +329,8 @@ class RLTrainingClass(RLBaseClass):
         #                               'ent_coef': 1.4354716707657966e-06,
         #                               'vf_coef': 0.8338478524724668,
         #                               'n_steps': 1024}
+        # STUDENT: IMPORTANT: THE ENVIRONMENT TRAINING PARAMETERS FOR A NETWORK MUST MATCH
+        #            IN BOTH THE TRAINING AND AGENT PLAY PARTS
         optimized_env_params = {'num_envs': 12, 'frame_skip': 4, 'frame_stack': 4, 'screen_size': 84}
         optimized_algorithm_params = {}
         # output_file = f"best_hyperparameters_{algorithm_class}.json"
@@ -361,6 +366,7 @@ class ParameterOptimizer(RLBaseClass):
         Objective function for Optuna to optimize PPO hyperparameters.
         """
         # Define hyperparameter search space
+        # STUDENT: IMPORTANT: CHANGE THE PARAMTER RANGES AND PARAMETER VARIABLES VALUES FOR EACH ALGORITHM
         optimized_algorithm_params = {
             # All algorithms
             "gamma": trial.suggest_float("gamma", 0.9, 0.99, step=0.01),
@@ -369,9 +375,9 @@ class ParameterOptimizer(RLBaseClass):
             "ent_coef": trial.suggest_float("ent_coef", 1e-8, 0.1, log=True),
             "vf_coef": trial.suggest_float("vf_coef", 0.1, 1.0),
             "n_steps": trial.suggest_int("n_steps", 128, 2048, step=128),
-            # PPO, RecurrentPPO, DQN, QRDQN, SAC
-            "batch_size": trial.suggest_categorical("batch_size", [64, 128, 256, 512]),
-            # DQN, QRDQN, SAC
+            # PPO, RecurrentPPO, DQN, QRDQN
+            # "batch_size": trial.suggest_categorical("batch_size", [64, 128, 256, 512]),
+            # DQN, QRDQN
             # "tau": 1.0,
             # "buffer_size": 250_000,
             # "learning_starts": 250_000 // 2,
@@ -655,7 +661,7 @@ def main(time_steps, training_device, save_dir, save_freq):
         # # Add frame stacking (e.g., stack 4 frames)
         # stacked_env = VecFrameStack(vec_env, n_stack=frame_stack)
         # env = stacked_env
-        # IMPORTANT: YOU MUST USE THE SAME ENVIRONMENT PARAMETERS for Optimization, Training and Testing
+        # STUDENT: IMPORTANT: YOU MUST USE THE SAME ENVIRONMENT PARAMETERS TRAINING AND TESTING/PLAYING THE GAME
         optimized_env_params = {'num_envs': 12, 'frame_skip': 2, 'frame_stack': 4, 'screen_size': 84}
 
         rl_base = RLBaseClass(algorithm_class, 0, screen_size)
@@ -670,13 +676,17 @@ def main(time_steps, training_device, save_dir, save_freq):
         # Use eval to instantiate the class
         model_class = eval(algorithm_class)
         policy_choice = "CnnPolicy"
-        param_optimizer = ParameterOptimizer(model_class, 100_000, screen_size,
+        # STUDENT: IMPORTANT: CONSIDER CHANING total_timesteps, n_trials, n_jobs for your project
+        total_timesteps = 100_000
+        n_trials = 50
+        n_jobs = 4
+        param_optimizer = ParameterOptimizer(model_class, total_timesteps, screen_size,
                                              policy_choice, training_device, log_dir="./neptuna_logs")
         # Create an Optuna study
         from optuna.integration import PyTorchLightningPruningCallback
         study = optuna.create_study(direction="maximize", pruner=optuna.pruners.MedianPruner())
         # study = optuna.create_study(direction="maximize")
-        study.optimize(param_optimizer.train_stable_baselines_optimized, n_trials=50, n_jobs=4)
+        study.optimize(param_optimizer.train_stable_baselines_optimized, n_trials=n_trials, n_jobs=n_jobs)
         # Print a summary of the study
         print("\nStudy Summary:")
         print(f"  Number of trials: {len(study.trials)}")
@@ -693,7 +703,8 @@ def main(time_steps, training_device, save_dir, save_freq):
 
 if __name__ == '__main__':
     # atari_game_id = "ALE/Breakout-v5"
-    atari_game_id = "Breakout-v4"
+    atari_game_id = "ALE/Pong-v5"
+    # atari_game_id = "Breakout-v4"
     # Define save frequency (e.g., 100 epochs with 10,000 steps per epoch = 1,000,000 steps)
     save_freq = 100_000  # Adjust this value for your needs
     # Train the model
