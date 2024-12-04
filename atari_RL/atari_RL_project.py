@@ -2,7 +2,7 @@
 
 # pip install threading numpy pygame
 # pip install gymnasium[atari,accept-rom-license] stable-baselines3[extra] torch torchvision tensorboard sb3-contrib
-# pip install opencv-python
+# pip install opencv-python ale-py
 # pip install optuna optuna-integration[pytorch_lightning]
 
 # Run this command in the python terminal to start TensorBoard during RL training:
