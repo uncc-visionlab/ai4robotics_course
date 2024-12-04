@@ -1,3 +1,7 @@
 /atari_RL/models/
 /atari_RL/logs/
 /atari_RL/*.zip
+/logs/
+/models/
+/atari_RL/neptuna_logs/
+/neptuna/
