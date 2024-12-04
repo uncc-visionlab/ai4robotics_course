@@ -16,6 +16,7 @@
 # Increase time_steps for more extensive training.
 
 import gymnasium as gym
+import ale_py
 from stable_baselines3.common.atari_wrappers import AtariWrapper, EpisodicLifeEnv
 from sb3_contrib import RecurrentPPO, TRPO, QRDQN
 from stable_baselines3 import A2C, DQN, PPO
@@ -610,7 +611,6 @@ def main(time_steps, training_device, save_dir, save_freq):
         "Enter your choice: "
     )
 
-    # gym.register_envs(ale_py)
     if choice == "1":
         policy_choice = "CnnPolicy"
         policy_choice_str = "cnn"
@@ -671,7 +671,7 @@ def main(time_steps, training_device, save_dir, save_freq):
         model_class = eval(algorithm_class)
         policy_choice = "CnnPolicy"
         param_optimizer = ParameterOptimizer(model_class, 100_000, screen_size,
-                                             policy_choice, training_device, log_dir="./neptuna")
+                                             policy_choice, training_device, log_dir="./neptuna_logs")
         # Create an Optuna study
         from optuna.integration import PyTorchLightningPruningCallback
         study = optuna.create_study(direction="maximize", pruner=optuna.pruners.MedianPruner())
@@ -712,4 +712,5 @@ if __name__ == '__main__':
     training_device = "cuda"
     # training_device = "cpu"
 
+    gym.register_envs(ale_py)
     main(time_steps, training_device, save_dir, save_freq)

@@ -319,14 +319,9 @@ def human_play(env, width=400, height=300, frame_rate=10):
 #         pygame.display.flip()
 #         clock.tick(FPS)
 
-
-# Run the program
-# if __name__ == "__main__":
-#     main()
-
 if __name__ == '__main__':
-    atari_game_id = "ALE/Breakout-v5"
-    # atari_game_id = "Breakout-v4"
+    # atari_game_id = "ALE/Breakout-v5"
+    atari_game_id = "Breakout-v4"
     # Save the trained model
     # Define a pattern for invalid characters
     invalid_chars = r'[<>:"/\\|?*]'
@@ -335,53 +330,3 @@ if __name__ == '__main__':
     game_string = f"atari_{sanitized_id}"
     env = DummyVecEnv([lambda: make_env(frame_skip=1)])
     human_play(env, width=800, height=600, frame_rate=15)
-
-# Create multiple environments with SubprocVecEnv
-# env_fns = [make_monitored_env(rank, log_dir, frame_skip, screen_size) for rank in range(num_envs_train)]
-# vec_env = SubprocVecEnv(env_fns)
-# Add frame stacking (e.g., stack 4 frames)
-# stacked_env = VecFrameStack(vec_env, n_stack=frame_stack)
-# env = stacked_env
-# print("Starting training...")
-# Callbacks for rendering and PyTorch TensorBoard logging
-# training_callbacks = [
-#     RenderCallback(env),
-#     TensorBoardCallback(writer=writer, frame_skip=frame_skip),
-#     SaveModelCallback(save_freq=save_freq, save_path=save_dir,
-#                       save_prefix=f"{log_dir_algorithm}_{policy_choice_str}", verbose=1)
-# ]
-
-# Map algorithm names to their corresponding functions or classes
-# algorithm_map = {
-#     "REINFORCE": lambda: train_stable_baselines(PPO, policy_choice, env, time_steps,
-#                                                 device=training_device, callbacks=training_callbacks,
-#                                                 model_path=model_path, log_dir=log_dir),
-#     "A2C": lambda: train_stable_baselines(A2C, policy_choice, env, time_steps,
-#                                           device=training_device, callbacks=training_callbacks,
-#                                           model_path=model_path, log_dir=log_dir),
-#     "DQN": lambda: train_stable_baselines(DQN, policy_choice, env, time_steps,
-#                                           device=training_device, callbacks=training_callbacks,
-#                                           model_path=model_path, log_dir=log_dir,
-#                                           buffer_size=dqn_buffer_size,
-#                                           learning_starts=dqn_learning_starts),
-#     "PPO": lambda: train_stable_baselines(PPO, policy_choice, env, time_steps,
-#                                           device=training_device, callbacks=training_callbacks,
-#                                           model_path=model_path, log_dir=log_dir),
-#     "TRPO": lambda: train_stable_baselines(TRPO, policy_choice, env, time_steps,
-#                                            device=training_device, callbacks=training_callbacks,
-#                                            model_path=model_path, log_dir=log_dir),
-#     "QRDQN": lambda: train_stable_baselines(QRDQN, policy_choice, env, time_steps,
-#                                             device=training_device, callbacks=training_callbacks,
-#                                             model_path=model_path, log_dir=log_dir,
-#                                             buffer_size=dqn_buffer_size,
-#                                             learning_starts=dqn_learning_starts),
-#     "RPPO": lambda: train_stable_baselines(RecurrentPPO, "CnnLstmPolicy", env, time_steps,
-#                                            device=training_device, callbacks=training_callbacks,
-#                                            model_path=model_path, log_dir=log_dir),
-# }
-
-# Check if the algorithm is valid
-# if algorithm_choice in algorithm_map:
-#     algorithm_map[algorithm_choice]()  # Call the corresponding training function
-# else:
-#     print(f"Algorithm {algorithm_map[algorithm_choice]} is not supported.")
