@@ -1,5 +1,6 @@
 import gymnasium as gym
 import cv2
+from fontTools.feaLib.ast import SHIFT
 from stable_baselines3.common.atari_wrappers import AtariWrapper, EpisodicLifeEnv
 from stable_baselines3.common.vec_env import DummyVecEnv
 import numpy as np
@@ -14,18 +15,6 @@ import time
 def resize_frame(frame, width, height):
     return cv2.resize(frame, (width, height), interpolation=cv2.INTER_LINEAR)
 
-
-# # Initialize Pygame
-# pygame.init()
-#
-# # Constants
-# SCREEN_WIDTH, SCREEN_HEIGHT = 400, 400
-# BG_COLOR = (0, 0, 0)
-# FPS = 30
-#
-# # Create Pygame screen
-# screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
-# pygame.display.set_caption("Atari RL Keyboard Handler")
 
 # Clock for controlling frame rate
 clock = pygame.time.Clock()
@@ -78,28 +67,28 @@ RL_ACTIONS = {
 }
 
 # Define movement and shift key mappings
-KEYPAD_MOVEMENTS = {
-    pygame.K_KP1: "DOWNLEFT",
-    pygame.K_KP2: "DOWN",
-    pygame.K_KP3: "DOWNRIGHT",
-    pygame.K_KP4: "LEFT",
-    pygame.K_KP5: "NOOP",
-    pygame.K_KP6: "RIGHT",
-    pygame.K_KP7: "UPLEFT",
-    pygame.K_KP8: "UP",
-    pygame.K_KP9: "UPRIGHT",
-}
 # KEYPAD_MOVEMENTS = {
-#     pygame.K_z: "DOWNLEFT",
-#     pygame.K_x: "DOWN",
-#     pygame.K_c: "DOWNRIGHT",
-#     pygame.K_a: "LEFT",
-#     pygame.K_s: "NOOP",
-#     pygame.K_d: "RIGHT",
-#     pygame.K_q: "UPLEFT",
-#     pygame.K_w: "UP",
-#     pygame.K_e: "UPRIGHT",
+#     pygame.K_KP1: "DOWNLEFT",
+#     pygame.K_KP2: "DOWN",
+#     pygame.K_KP3: "DOWNRIGHT",
+#     pygame.K_KP4: "LEFT",
+#     pygame.K_KP5: "NOOP",
+#     pygame.K_KP6: "RIGHT",
+#     pygame.K_KP7: "UPLEFT",
+#     pygame.K_KP8: "UP",
+#     pygame.K_KP9: "UPRIGHT",
 # }
+KEYPAD_MOVEMENTS = {
+    pygame.K_z: "DOWNLEFT",
+    pygame.K_x: "DOWN",
+    pygame.K_c: "DOWNRIGHT",
+    pygame.K_a: "LEFT",
+    pygame.K_s: "NOOP",
+    pygame.K_d: "RIGHT",
+    pygame.K_q: "UPLEFT",
+    pygame.K_w: "UP",
+    pygame.K_e: "UPRIGHT",
+}
 
 # Add shift-modified actions
 SHIFT_MOVEMENTS = {key: f"{action}FIRE" for key, action in KEYPAD_MOVEMENTS.items()}
@@ -126,52 +115,54 @@ def listen_for_key_presses(action_queue):
                 if keys[key]:
                     if keys[key] == pygame.K_q:
                         pygame.quit()
+                        selected_action = RL_ACTIONS["RESET"]
                         return
                     elif keys[key] == pygame.K_ESCAPE:
                         selected_action = RL_ACTIONS["RESET"]
-                    elif shift_pressed and action_str in SHIFT_MOVEMENTS.values():
+                    elif shift_pressed and action_str is not None:
                         action_val = f"{action_str}FIRE"
-                        selected_action = RL_ACTIONS.get(action_str, RL_ACTIONS["NOOP"])
+                        selected_action = RL_ACTIONS.get(action_val, RL_ACTIONS["NOOP"])
                     else:
                         action_val = action_str
                         selected_action = RL_ACTIONS.get(action_str, RL_ACTIONS["NOOP"])
 
             # If only shift is pressed, assign the fire action
-            if shift_pressed and selected_action == RL_ACTIONS["NOOP"]:
+            if shift_pressed and selected_action == None:
                 selected_action = RL_ACTIONS["FIRE"]
+                action_val = "FIRE"
 
             print(f"selected_action={action_val}")
-
+            while not action_queue.empty():
+                action_queue.queue.remove(action_queue.queue[0])  # Remove action when key released
+            action_queue.put(selected_action)
             if event.type == pygame.QUIT:
                 pygame.quit()
                 return
-            elif event.type == pygame.KEYDOWN and selected_action is not None:
-                action_queue.put(selected_action)  # Add the action to the queue when key pressed
-            elif event.type == pygame.KEYUP and selected_action is not None:
-                action_queue.queue.remove(selected_action)  # Remove action when key released
-            clock.tick(300)
+            clock.tick(200)
 
-# Function to handle keyboard input
-def handle_keyboard_input():
-    keys = pygame.key.get_pressed()
-    shift_pressed = keys[pygame.K_LSHIFT] or keys[pygame.K_RSHIFT]
 
-    # Default action is noop
-    selected_action = RL_ACTIONS["noop"]
+class ActionSpaceMapper:
+    def __init__(self, game_action_space):
+        # Specific action space for Pong
+        # game_action_space = ["NOOP", "UP", "DOWN"]
+        self.game_action_space = game_action_space
+        # Map the indices from the full action space to the game-specific action space
+        self.mapping = {ATARI_ACTIONS[action]: i for i, action in enumerate(game_action_space)}
+        # Test the function
+        full_action_index = 2  # "UP" in full action space
+        print(f"Mapped action: {self.map_action(full_action_index)}")  # Output: 1
 
-    # Check for keypad movements
-    for key, action in KEYPAD_MOVEMENTS.items():
-        if keys[key]:
-            if shift_pressed and action in SHIFT_MOVEMENTS.values():
-                selected_action = RL_ACTIONS.get(f"{action}+fire", RL_ACTIONS["noop"])
-            else:
-                selected_action = RL_ACTIONS.get(action, RL_ACTIONS["noop"])
-
-    # If only shift is pressed, assign the fire action
-    if shift_pressed and selected_action == RL_ACTIONS["noop"]:
-        selected_action = RL_ACTIONS["fire"]
-
-    return selected_action
+    # Example of mapping actions
+    def map_action(self, full_action_index):
+        # if not (isinstance(action, int) and 0 <= action < action_space.n):
+        #     print(f"Invalid action value = {action} returned!")
+        #     action = 0
+        if full_action_index in self.mapping:
+            return self.mapping[full_action_index]
+        else:
+            # raise ValueError("Action not valid for this game. Returning NOOP")
+            print("Action not valid for this game. Returning NOOP.")
+            return ATARI_ACTIONS["NOOP"]
 
 
 def make_env(frame_skip=4):
@@ -192,9 +183,9 @@ def make_env(frame_skip=4):
 
 
 # Function for human play
-def human_play(env, width=400, height=300, frame_rate=10):
+def human_play(env, action_space_map, width=400, height=300, frame_rate=10):
     print("Starting Human Play Mode!")
-    print("Controls: Left Arrow = Move Left | Right Arrow = Move Right | Space = Fire")
+    # print("Controls: Left Arrow = Move Left | Right Arrow = Move Right | Space = Fire")
     print("Press 'q' to quit during gameplay.")
 
     # Initialize pygame
@@ -231,14 +222,6 @@ def human_play(env, width=400, height=300, frame_rate=10):
                     return True
             clock.tick(100)  # Limit the loop to 100 queries per second
 
-    # Map keyboard input to actions
-    # Action meanings: [NOOP, FIRE, RIGHT, LEFT]
-    action_map = {
-        pygame.K_LEFT: 3,  # Move Left
-        pygame.K_RIGHT: 2,  # Move Right
-        pygame.K_SPACE: 1,  # Fire
-    }
-
     truncated = False
 
     # Create a queue to store key presses
@@ -254,10 +237,8 @@ def human_play(env, width=400, height=300, frame_rate=10):
         print("Starting a new game!")
         # Show the countdown before the game starts
         show_countdown()
-        obs = env.reset()
+        env.reset()
         game_over = False
-        # Get the action space
-        action_space = env.action_space
         while not game_over:
             obs_image = env.render()  # Returns the rendered frame as an array
             resized_frame = resize_frame(obs_image, width=width, height=height)
@@ -267,24 +248,18 @@ def human_play(env, width=400, height=300, frame_rate=10):
             # Update the display
             pygame.display.flip()
             action = 0  # Default action (NOOP)
-            # start_time = pygame.time.get_ticks()  # Record the time before checking for key events
-            # Process events within 30 ms
-            # while pygame.time.get_ticks() - start_time < 30:  # Allow 30 ms to read a key
             if not action_queue.empty():
-                action = action_queue.get_nowait()  # Get the first key in the queue
-                if not (isinstance(action, int) and 0 <= action < action_space.n):
-                    print(f"Invalid action value = {action} returned!")
-                    action = 0
-
-            if game_over:
-                break
+                full_action_space_action = action_queue.get_nowait()  # Get the first key in the queue
+                action = action_space_map.map_action(full_action_space_action)
             # print(f"action = {action}")
             # Step the environment
             # obs, reward, terminated, truncated, info = env.step(np.array([action]))
             obs, reward, terminated, info = env.step(np.array([action]))
-            game_over = terminated or truncated
             # Limit frame rate to frame_rate FPS
             clock.tick(frame_rate)
+            game_over = terminated or truncated
+            if game_over:
+                break
 
         print("Game Over!")
         # Ask the user to play again
@@ -298,30 +273,25 @@ def human_play(env, width=400, height=300, frame_rate=10):
     print("Human Play Session Ended.")
 
 
-# # Main loop
-# def main():
-#     while True:
-#         for event in pygame.event.get():
-#             if event.type == pygame.QUIT:
-#                 pygame.quit()
-#                 sys.exit()
-#
-#         # Get the action based on keyboard input
-#         action = handle_keyboard_input()
-#
-#         # Update screen
-#         screen.fill(BG_COLOR)
-#         font = pygame.font.Font(None, 36)
-#         text_surface = font.render(f"Selected Action: {action}", True, (255, 255, 255))
-#         screen.blit(text_surface, (10, SCREEN_HEIGHT // 2 - 20))
-#
-#         # Update display
-#         pygame.display.flip()
-#         clock.tick(FPS)
-
 if __name__ == '__main__':
+    # atari_game_id = "Breakout-v4"
     # atari_game_id = "ALE/Breakout-v5"
-    atari_game_id = "Breakout-v4"
+    # atari_game_id = "ALE/Pong-v5"
+    atari_game_id = "ALE/Robotank-v5"
+    # atari_game_id = "ALE/Gopher-v5"
+    # atari_game_id = "ALE/RoadRunner-v5"
+    # atari_game_id = "SpaceInvaders-v4"
+    # atari_game_id = "ALE/SpaceInvaders-v5"
+    if atari_game_id.find("Breakout") >= 0:
+        game_action_space = ["NOOP", "FIRE", "RIGHT", "LEFT"]
+    elif atari_game_id.find("Pong") >= 0 or atari_game_id.find("SpaceInvaders") >= 0:
+       game_action_space = ["NOOP", "FIRE", "RIGHT", "LEFT", "RIGHTFIRE", "LEFTFIRE"]
+    elif atari_game_id.find("Gopher") >= 0:
+        game_action_space = ["NOOP", "FIRE", "UP", "RIGHT", "LEFT", "UPFIRE", "RIGHTFIRE", "LEFTFIRE"]
+    elif atari_game_id.find("RoadRunner") >= 0 or atari_game_id.find("Robotank") >= 0:
+        game_action_space = ["NOOP", "FIRE", "UP", "RIGHT", "LEFT", "DOWN",
+                             "UPRIGHT", "UPLEFT", "DOWNRIGHT", "DOWNLEFT", "UPFIRE", "RIGHTFIRE",
+                             "LEFTFIRE", "DOWNFIRE", "UPRIGHTFIRE", "UPLEFTFIRE", "DOWNRIGHTFIRE", "DOWNLEFTFIRE"]
     # Save the trained model
     # Define a pattern for invalid characters
     invalid_chars = r'[<>:"/\\|?*]'
@@ -329,4 +299,5 @@ if __name__ == '__main__':
     sanitized_id = re.sub(invalid_chars, replacement, atari_game_id)
     game_string = f"atari_{sanitized_id}"
     env = DummyVecEnv([lambda: make_env(frame_skip=1)])
-    human_play(env, width=800, height=600, frame_rate=15)
+    action_space_map = ActionSpaceMapper(game_action_space)
+    human_play(env, action_space_map, width=800, height=600, frame_rate=10)
