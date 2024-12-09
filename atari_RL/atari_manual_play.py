@@ -1,4 +1,5 @@
 import gymnasium as gym
+import ale_py
 import cv2
 from fontTools.feaLib.ast import SHIFT
 from stable_baselines3.common.atari_wrappers import AtariWrapper, EpisodicLifeEnv
