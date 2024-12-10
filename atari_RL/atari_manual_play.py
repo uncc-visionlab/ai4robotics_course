@@ -14,7 +14,7 @@ import time
 
 
 def resize_frame(frame, width, height):
-    return cv2.resize(frame, (width, height), interpolation=cv2.INTER_LINEAR)
+    return cv2.resize(frame, (width, height), interpolation=cv2.INTER_CUBIC)
 
 
 # Clock for controlling frame rate
@@ -174,12 +174,11 @@ class ActionSpaceMapper:
 def make_env(frame_skip=4):
     # create environment
     environment_config = {
-        # "id": "Breakout-v4",  # Replace 'Breakout-v5' with another game if desired
         "id": atari_game_id,  # Replace 'Breakout-v5' with another game if desired
         "render_mode": "rgb_array",  # None, "human", "rgb_array"
         "full_action_space": False,
         "repeat_action_probability": 0,
-        "mode": 0
+        "mode": 0,
     }
     env = gym.make(**environment_config)
     # env = AtariWrapper(env)
@@ -206,6 +205,7 @@ def human_play(env, action_space_map, width=400, height=300, frame_rate=10):
     def show_countdown():
         """Displays a 5-second countdown before the game starts."""
         for i in range(2, 0, -1):  # Countdown from 5 to 1
+            process_key_presses(action_queue)
             screen.fill((0, 0, 0))  # Clear the screen
             countdown_text = font.render(str(i), True, (255, 255, 255))  # Render the countdown number
             text_rect = countdown_text.get_rect(center=(width // 2, height // 2))  # Center the text
@@ -220,6 +220,7 @@ def human_play(env, action_space_map, width=400, height=300, frame_rate=10):
             screen.fill((0, 0, 0))  # Clear screen with black background
             screen.blit(text_surface, text_rect)  # Draw text
             pygame.display.flip()  # Update the display
+            process_key_presses(action_queue)
             if not action_queue.empty():
                 selected_action = action_queue.get_nowait()  # Get the first key in the queue
                 if selected_action == RL_ACTIONS["RESET"]:  # Quit on 'Esc' key
@@ -306,4 +307,4 @@ if __name__ == '__main__':
     game_string = f"atari_{sanitized_id}"
     env = DummyVecEnv([lambda: make_env(frame_skip=1)])
     action_space_map = ActionSpaceMapper(game_action_space)
-    human_play(env, action_space_map, width=800, height=600, frame_rate=10)
+    human_play(env, action_space_map, width=800, height=600, frame_rate=15)
