@@ -99,47 +99,52 @@ stop_event = threading.Event()
 
 
 # Function to accumulate key presses in a separate thread
-def listen_for_key_presses(action_queue):
-    clock = pygame.time.Clock()  # Initialize the clock for frame rate control
+def process_key_presses(action_queue):
     """ Thread to listen for key presses and store them in a queue """
-    while not stop_event.is_set():
-        for event in pygame.event.get():
-            keys = pygame.key.get_pressed()
-            shift_pressed = keys[pygame.K_LSHIFT] or keys[pygame.K_RSHIFT]
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            pygame.quit()
+            return
+        # if event.type == pygame.KEYDOWN:
+            # print("Key pressed:", event.key)
+            # To print the character instead of the key code:
+            # print("Character:", pygame.key.name(event.key))
 
-            # Default action is noop
-            # selected_action = RL_ACTIONS["NOOP"]
-            selected_action = None
-            # Check for keypad movements
-            action_val = None
-            for key, action_str in KEYPAD_MOVEMENTS.items():
-                if keys[key]:
-                    if keys[key] == pygame.K_q:
-                        pygame.quit()
-                        selected_action = RL_ACTIONS["RESET"]
-                        return
-                    elif keys[key] == pygame.K_ESCAPE:
-                        selected_action = RL_ACTIONS["RESET"]
-                    elif shift_pressed and action_str is not None:
-                        action_val = f"{action_str}FIRE"
-                        selected_action = RL_ACTIONS.get(action_val, RL_ACTIONS["NOOP"])
-                    else:
-                        action_val = action_str
-                        selected_action = RL_ACTIONS.get(action_str, RL_ACTIONS["NOOP"])
+    keys = pygame.key.get_pressed()
+    shift_pressed = keys[pygame.K_LSHIFT] or keys[pygame.K_RSHIFT]
 
-            # If only shift is pressed, assign the fire action
-            if shift_pressed and selected_action == None:
-                selected_action = RL_ACTIONS["FIRE"]
-                action_val = "FIRE"
-
-            print(f"selected_action={action_val}")
-            while not action_queue.empty():
-                action_queue.queue.remove(action_queue.queue[0])  # Remove action when key released
-            action_queue.put(selected_action)
-            if event.type == pygame.QUIT:
+    # Default action is noop
+    # selected_action = RL_ACTIONS["NOOP"]
+    selected_action = None
+    # Check for keypad movements
+    action_val = None
+    for key, action_str in KEYPAD_MOVEMENTS.items():
+        if keys[key]:
+            if keys[key] == pygame.K_q:
                 pygame.quit()
+                selected_action = RL_ACTIONS["RESET"]
                 return
-            clock.tick(200)
+            elif keys[key] == pygame.K_ESCAPE:
+                selected_action = RL_ACTIONS["RESET"]
+            elif shift_pressed and action_str is not None:
+                action_val = f"{action_str}FIRE"
+                selected_action = RL_ACTIONS.get(action_val, RL_ACTIONS["NOOP"])
+            else:
+                action_val = action_str
+                selected_action = RL_ACTIONS.get(action_str, RL_ACTIONS["NOOP"])
+
+    # If only shift is pressed, assign the fire action
+    if shift_pressed and selected_action == None:
+        selected_action = RL_ACTIONS["FIRE"]
+        action_val = "FIRE"
+
+    print(f"selected_action={action_val}")
+    while not action_queue.empty():
+        action_queue.queue.remove(action_queue.queue[0])  # Remove action when key released
+    action_queue.put(selected_action)
+    # if event.type == pygame.QUIT:
+    #     pygame.quit()
+    #     return
 
 
 class ActionSpaceMapper:
@@ -228,10 +233,9 @@ def human_play(env, action_space_map, width=400, height=300, frame_rate=10):
     # Create a queue to store key presses
     action_queue = queue.Queue()
     # Start the thread to listen for key presses
-    key_thread = threading.Thread(target=listen_for_key_presses, args=(action_queue,))
-    key_thread.daemon = True  # Ensure the thread exits when the main program exits
-    key_thread.start()
-
+    # key_thread = threading.Thread(target=listen_for_key_presses, args=(action_queue,))
+    # key_thread.daemon = True  # Ensure the thread exits when the main program exits
+    # key_thread.start()
     # Game loop
     running = True
     while running:  # Loop to allow replaying
@@ -249,6 +253,7 @@ def human_play(env, action_space_map, width=400, height=300, frame_rate=10):
             # Update the display
             pygame.display.flip()
             action = 0  # Default action (NOOP)
+            process_key_presses(action_queue)
             if not action_queue.empty():
                 full_action_space_action = action_queue.get_nowait()  # Get the first key in the queue
                 action = action_space_map.map_action(full_action_space_action)
@@ -278,10 +283,10 @@ if __name__ == '__main__':
     # atari_game_id = "Breakout-v4"
     # atari_game_id = "ALE/Breakout-v5"
     # atari_game_id = "ALE/Pong-v5"
-    atari_game_id = "ALE/Robotank-v5"
+    # atari_game_id = "ALE/Robotank-v5"
     # atari_game_id = "ALE/Gopher-v5"
     # atari_game_id = "ALE/RoadRunner-v5"
-    # atari_game_id = "SpaceInvaders-v4"
+    atari_game_id = "SpaceInvaders-v4"
     # atari_game_id = "ALE/SpaceInvaders-v5"
     if atari_game_id.find("Breakout") >= 0:
         game_action_space = ["NOOP", "FIRE", "RIGHT", "LEFT"]
