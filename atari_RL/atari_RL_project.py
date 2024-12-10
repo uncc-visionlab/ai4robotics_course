@@ -136,6 +136,9 @@ class RenderCallback(BaseCallback):
             obs = self.env.reset()
             clock = pygame.time.Clock()  # Initialize the clock for frame rate control
             for _ in range(self.max_timesteps):  # Render a few steps of gameplay
+                for event in pygame.event.get():
+                    if event.type == pygame.QUIT:
+                        return False
                 action, _ = self.model.predict(obs)
                 obs, _, done, _ = self.env.step(action)
                 obs_image = self.env.render()  # Returns the rendered frame as an array
@@ -573,10 +576,13 @@ def agent_play(env, model, frame_skip=1, width=500, height=400, frame_rate=10):
         truncated = False
         num_frames = 0
         while not done:
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    return
             action, _ = model.predict(obs)
             # obs, reward, terminated, truncated, info = env.step(action)
             obs, reward, terminated, info = env.step(action)
-            done = terminated or truncated
+            done |= terminated or truncated
             obs_image = env.render()  # Returns the rendered frame as an array
             # Rendering and resizing a frame
             resized_frame = resize_frame(obs_image, width=width, height=height)
