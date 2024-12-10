@@ -582,7 +582,7 @@ def agent_play(env, model, frame_skip=1, width=500, height=400, frame_rate=10):
             action, _ = model.predict(obs)
             # obs, reward, terminated, truncated, info = env.step(action)
             obs, reward, terminated, info = env.step(action)
-            done |= terminated or truncated
+            done = terminated or truncated
             obs_image = env.render()  # Returns the rendered frame as an array
             # Rendering and resizing a frame
             resized_frame = resize_frame(obs_image, width=width, height=height)
