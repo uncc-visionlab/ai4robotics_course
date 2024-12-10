@@ -629,7 +629,7 @@ def main(time_steps, training_device, save_dir, save_freq):
 
         algorithm_class = select_model_train()
         log_dir_algorithm = algorithm_class.lower()
-        log_dir = f"./logs/{log_dir_algorithm}_{policy_choice_str}_atari"
+        log_dir = os.path.join(".","logs",f"{log_dir_algorithm}_{policy_choice_str}_atari")
         # Use eval to instantiate the class
         model_class = eval(algorithm_class)
         model_path = f"{log_dir_algorithm}_{policy_choice_str}"
@@ -650,7 +650,8 @@ def main(time_steps, training_device, save_dir, save_freq):
         selected_model_path = list_and_select_model(save_dir)
         if not selected_model_path:
             return
-        filename = selected_model_path.split("/")[-1]
+        # filename = selected_model_path.split("/")[-1]
+        filename = os.path.basename(selected_model_path)
         algorithm_class = str(filename.split("_")[0]).upper()
         print(f"Algorithm class name: {algorithm_class}")
         try:
@@ -722,7 +723,7 @@ if __name__ == '__main__':
     replacement = "_"
     sanitized_id = re.sub(invalid_chars, replacement, atari_game_id)
     game_string = f"atari_{sanitized_id}"
-    save_dir = f"./models/{game_string}"
+    save_dir = os.path.join(".","models",game_string)
 
     # Select cpu or gpu, generally gpu will train faster if GPU hardware is available
     # Choose one of cpu, cuda, ipu, xpu, mkldnn, opengl, opencl, ideep, hip, ve, fpga, maia, xla, lazy,
