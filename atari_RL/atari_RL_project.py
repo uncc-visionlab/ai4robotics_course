@@ -48,7 +48,7 @@ stop_event = threading.Event()
 
 
 def resize_frame(frame, width, height):
-    return cv2.resize(frame, (width, height), interpolation=cv2.INTER_LINEAR)
+    return cv2.resize(frame, (width, height), interpolation=cv2.INTER_CUBIC)
 
 
 def select_model_train():
@@ -709,7 +709,8 @@ def main(time_steps, training_device, save_dir, save_freq):
 
 if __name__ == '__main__':
     # atari_game_id = "ALE/Breakout-v5"
-    atari_game_id = "ALE/Pong-v5"
+    atari_game_id = "ALE/SpaceInvaders-v5"
+    # atari_game_id = "ALE/Pong-v5"
     # atari_game_id = "Breakout-v4"
     # Define save frequency (e.g., 100 epochs with 10,000 steps per epoch = 1,000,000 steps)
     save_freq = 100_000  # Adjust this value for your needs
